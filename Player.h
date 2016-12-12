@@ -1,12 +1,11 @@
 #pragma once
-#include "C:\SFML-2.4.0VS15\include\SFML\Graphics\Sprite.hpp"
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Spell.h"
-
+#include "IEntity.h"
 #include <string>
 
-class Player
+class Player 
 {
 	/*** Donnes membres ***/
 	std::string m_Name;
@@ -14,6 +13,11 @@ class Player
 	sf::Sprite m_Sprite;
 	enum Dir {Down, Left, Right, Up};
 	sf::Vector2i Anim;
+	bool m_MovableTop;
+	bool m_MovableBottom;
+	bool m_MovableLeft;
+	bool m_MovableRight;
+
 //	std::vector <Spell> VSpells;
 public:
 
@@ -26,13 +30,16 @@ public:
 	void Animation();
 	void UpdataAnimation(sf::Clock*  & Clock, const float & Seconds);
 	void LearnSpell();
+	void setPosAfterPassDoor(const int & posDoor);
 
 	/*** Getters ***/
 	sf::Sprite GetSprite() const;
 
 	/*** Setters ***/
+	void setMovable(const bool & movable, const int & direction);
 	void setPosX(const float & VelX);
 	void setPosY(const float & VelX);
+	void setPosition(const int & x, const int & y);
 };
 
 
