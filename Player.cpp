@@ -3,16 +3,24 @@
 #include <string>
 #include <SFML/Graphics.hpp>
 #include <iostream>
+
 using namespace std;
 
 Player::Player(const string & Name ) : m_Name(Name)
 {
+	isAttacking = false;
+	// On active la possibilité de déplacement
+	m_MovableTop = true;
+	m_MovableBottom = true;
+	m_MovableRight = true;
+	m_MovableLeft = true;
+	cooldownAttack = false;
 
 	Anim = sf::Vector2i(1, Down);
 	sf::Texture TexturePlayer;
 
 	// Affectation de l'image à la texture
-	if (!TexturePlayer.loadFromFile("Sprites/perso.png"))
+	if (!TexturePlayer.loadFromFile("Sprites/player.png"))
 	{
 		std::cout << "Error loading player.png" << std::endl;
 	}
@@ -30,13 +38,8 @@ Player::Player(const string & Name ) : m_Name(Name)
 	// Affectation de la texture au sprite (utilisation du pointeur donnée membre nécéssaire)
 	Sprite.setTexture(*m_Texture);
 	m_Sprite = Sprite;
-	m_Sprite.setTextureRect(sf::IntRect(0, 0, (*m_Texture).getSize().x / 3, (*m_Texture).getSize().y / 4));
-
-	// Apprentissage du sort de base
-	//Spell Sp("Cut", 0.1, 10, 4, "dsdsds/dsqdsq.png");
-//	LearnSpell(Sp);
-
-
+	m_Sprite.setPosition(500, 500);
+	m_Sprite.setTextureRect(sf::IntRect(0, 0, (*m_Texture).getSize().x / 4, (*m_Texture).getSize().y / 4));
 }
 
 
@@ -54,75 +57,115 @@ void Player::Move()
 	//	  Il est important d'utiliser des if et non pas des else if afin de 
 	//    pouvoir gérer le déplacement en diagonale (tUP+Left pressées par ex)
 
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
+	if (sf::Mouse::isButtonPressed(sf::Mouse::Right) && !cooldownAttack)
+	{
+		isAttacking = true;
+		cooldownAttack = false;
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z) && m_MovableTop)
 	{
 		Anim.y = Up;
-		setPosY(-0.65);
-
+		setPosY(-1.5);
 	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && m_MovableBottom)
 	{
 		Anim.y = Down;
-		setPosY(0.65);
+		setPosY(1.5);
 	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && m_MovableLeft)
 	{
 		Anim.y = Right;
-		setPosX(0.65);
+		setPosX(1.5);
 
 	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q) && m_MovableRight)
 	{
 		Anim.y = Left;
-		setPosX(-0.65);
+		setPosX(-1.5);
 	}
-	if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
-	{
-		//m_Spells[0].Launch(this);
-	}
+	
 }
-
+	
 void Player::Animation()
 {
 
 		Anim.x++;
+		if (isAttacking && !cooldownAttack)
+		{
+			cout << "ATTACK" << endl;
+			m_Sprite.setTextureRect(sf::IntRect(300, Anim.y * ((*m_Texture).getSize().y / 4),
+				(*m_Texture).getSize().x,
+				(*m_Texture).getSize().y / 4));
+			isAttacking = false;
+			return;
+		}
 		if (Anim.x == 3) Anim.x = 0;
-		if (Anim.x * ((*m_Texture).getSize().x / 3) + 1 >= (*m_Texture).getSize().x)
+		if (Anim.x * ((*m_Texture).getSize().x / 4) + 1 >= (*m_Texture).getSize().x)
 			Anim.x = 0;
 
-		m_Sprite.setTextureRect(sf::IntRect(Anim.x * ((*m_Texture).getSize().x / 3), Anim.y * ((*m_Texture).getSize().y / 4),
-													 (*m_Texture).getSize().x / 3, 
+		m_Sprite.setTextureRect(sf::IntRect(Anim.x * ((*m_Texture).getSize().x / 4), Anim.y * ((*m_Texture).getSize().y / 4),
+													 (*m_Texture).getSize().x / 4, 
 											         (*m_Texture).getSize().y / 4));
 }
 
-void Player::UpdataAnimation(sf::Clock* & Clock, const float & Time)
+void Player::UpdataAnimation(sf::Clock* & Clock)
 {
+	const double Time = 60;
 
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z) ||
 		sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) ||
 		sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q) ||
 		sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
 	{ 
-		if ((*Clock).getElapsedTime().asSeconds() >= Time)
+		if ((*Clock).getElapsedTime().asMilliseconds() >= Time)
 		{
-
-			cout << (*Clock).getElapsedTime().asSeconds() << endl;
+			cout << (*Clock).getElapsedTime().asMilliseconds() << endl;
 			Animation();
+			if (!isAttacking)
+				(*Clock).restart();
+			else
+				(*Clock).restart();
 
-			(*Clock).restart();
+			if ((*Clock).getElapsedTime().asMilliseconds() >= 1000 && cooldownAttack)
+				cooldownAttack = false;
 		}
-	}
-	else
-	{
-		m_Sprite.setTextureRect(sf::IntRect(0, Anim.y * ((*m_Texture).getSize().y / 4),
-			(*m_Texture).getSize().x / 3,
-			(*m_Texture).getSize().y / 4));
 	}
 }
 
 void Player::LearnSpell()
 {
 	//m_Spells.push_back(SpellToTeach);
+}
+void Player::setPosAfterPassDoor(const int & posDoor)
+{
+
+	/** SERT DE DEBUGGAGE **/
+		//--> FAIRE CLASSE AUTOMOOVER
+	if (posDoor == 2)
+		setPosition(sf::VideoMode::getDesktopMode().width / 2, sf::VideoMode::getDesktopMode().height - 50);
+	if (posDoor == 3)
+		setPosition(sf::VideoMode::getDesktopMode().width / 2 - 20, 30);
+	if (posDoor == 1)
+		setPosition(30, sf::VideoMode::getDesktopMode().height / 2);
+	if (posDoor == 0)
+		setPosition(sf::VideoMode::getDesktopMode().width - 30, sf::VideoMode::getDesktopMode().height / 2 - 20);
+
+
+}
+void Player::setMovable(const bool & movable, const int & direction)
+{
+	// Bloqué au nord
+	if (direction == 2)
+		m_MovableTop = movable;
+	// Bloqué au sud
+	if (direction == 3)
+		m_MovableBottom = movable;
+	// Bloqué a l'est
+	if (direction == 1)
+		m_MovableLeft = movable;
+	// Bloqué à l'ouest
+	if (direction == 0)
+		m_MovableRight = movable;
 }
 /*** Setters ***/
 void Player::setPosX(const float & VelX)
@@ -143,4 +186,19 @@ void Player::setPosY(const float & VelY)
 
 }
 
+void Player::setPosition(const int & x, const int & y)
+{
+	m_Sprite.setPosition(x, y);
+}
+
+
+/*** GETTERS ***/
+
 sf::Sprite Player::GetSprite() const { return m_Sprite; }
+
+float Player::getPosX() {
+	return m_Sprite.getPosition().x;
+}
+float Player::getPosY() {
+	return m_Sprite.getPosition().y;
+}
